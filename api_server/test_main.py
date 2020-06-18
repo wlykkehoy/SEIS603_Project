@@ -17,9 +17,9 @@ verbose = False
 def send_sensor_reading_messages(message_filename):
     # load the message data up; note the file contains 1 or more messages, one per row, with a header
     full_pathname = os.path.join(CONFIG_DATA['TEST_DATA_SUBDIR'], message_filename)
-    if verbose: print('Reading test data from file:', full_pathname)
+    if verbose: print('Reading test data from file: ', full_pathname, flush=True)
     tests = pd.read_csv(full_pathname)
-    if verbose: print('The file contains {} device sensor messages'.format(len(tests)))
+    if verbose: print('The file contains {} device sensor messages'.format(len(tests)), flush=True)
     assert(len(tests) > 0)      # an empty test data file should never happen...
 
     # For each message to send, package the data and send via POST
@@ -29,9 +29,9 @@ def send_sensor_reading_messages(message_filename):
                          'timestamp': message_data['timestamp'],
                          'temp': message_data['temp'],
                          'humidity': message_data['humidity']}
-        if verbose: print('Message {} data :{}'.format((idx + 1), packaged_data))
+        if verbose: print('\nMessage {}:\n=>Data :{}'.format((idx + 1), packaged_data), flush=True)
         response = requests.post(CONFIG_DATA['API_URL'], json=packaged_data)
-        if verbose: print('Response Status:{}   Content:{}'.format(response.status_code, response.content))
+        if verbose: print('=>Response Status:{}\n=>Content:{}'.format(response.status_code, response.content), flush=True)
         if response.status_code != 200:         # stop on the first failing POST
             break
 
@@ -90,4 +90,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #test_1_message_in_range()
+

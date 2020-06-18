@@ -1,5 +1,6 @@
 
 
+# Incoming payload:
 # {
 #   "dev_id": "razpi_1",
 #   "timestamp": "2020-06-18T11:06:00Z",
@@ -18,6 +19,7 @@
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+from pymongo import MongoClient
 
 app = FastAPI()
 
@@ -31,6 +33,20 @@ class ReadingsMsgBody(BaseModel):
 
 @app.post("/readings/")
 def create_item(msg_body: ReadingsMsgBody):
-    print('<<< ', msg_body, ' >>>')
+    print('<<< ', msg_body, ' >>>', flush=True)
+
+    packaged_data = {'dev_id': msg_body.dev_id,
+                     'timestamp': msg_body.timestamp,
+                     'temp': msg_body.temp,
+                     'humidity': msg_body.humidity}
+    print(packaged_data, flush=True)
+
+    client = MongoClient("mongodb+srv://razpi:razpipzar@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority")
+    db = client.basement_data
+    readings = db.readings
+    foo = readings.insert_one(packaged_data)
+    print(foo.acknowledged)
+    client.close()
+    
     return 'OK'    # what do I want to return if anything??
 
