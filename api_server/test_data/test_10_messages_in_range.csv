@@ -1,4 +1,4 @@
-dev_id,timestamp,temp,humidity
+dev_id,ts,temp,humidity
 razpi_01,2020-06-18T11:00:00Z,68,45
 razpi_01,2020-06-18T11:01:00Z,67,46
 razpi_01,2020-06-18T11:02:00Z,69,45

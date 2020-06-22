@@ -26,7 +26,7 @@ def send_sensor_reading_messages(message_filename):
     response = None     # here just to get rid of PEP8 warning
     for idx, message_data in tests.iterrows():
         packaged_data = {'dev_id': message_data['dev_id'],
-                         'timestamp': message_data['timestamp'],
+                         'ts': message_data['ts'],
                          'temp': message_data['temp'],
                          'humidity': message_data['humidity']}
         if verbose: print('\nMessage {}:\n=>Data :{}'.format((idx + 1), packaged_data), flush=True)

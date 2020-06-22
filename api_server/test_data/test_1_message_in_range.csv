@@ -1,2 +1,2 @@
-dev_id,timestamp,temp,humidity
+dev_id,ts,temp,humidity
 razpi_01,2020-06-18T11:06:00Z,68,45
