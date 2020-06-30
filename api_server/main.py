@@ -37,7 +37,7 @@ CONFIG_DATA = {'monbodb_server_url': 'mongodb+srv://razpi:razpipzar@cluster0-ylp
                }
 
 # TODO: This info should be coming from an environment variable;
-SECRET_DATA = {'SENDGRID_API_KEY': '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'}
+SECRET_DATA = {'SENDGRID_API_KEY': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
 
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
