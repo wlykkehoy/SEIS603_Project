@@ -1,0 +1,23 @@
+Test cases:
+
+X posting 1 message, single device, readings in range
+X posting sequence from single device, temp and humidity readings in range (thus no alert nor alert to clear)
+
+X posting sequence from single device that causes a temp alert
+X posting sequence from single device that causes a temp alert then clears alert
+posting sequence from single device that causes a temp alert and alert renotification
+posting sequence from single device that causes & continues temp alert within renotification window (thus no renotification)
+
+
+posting sequence from single device where readings are in and out of range; no existing alert
+posting sequence from single device where readings are in and out of range; existing alert
+
+
+
+< temp ones also applied to humidity >
+
+< combo temp and humidity ?>
+
+< multiple devices >
+
+How do I progmatically confirm an email was sent??
