@@ -1,57 +1,49 @@
 # main.py
 # Wade J Lykkehoy (WadeLykkehoy@gmail.com)
 
-
-# Incoming payload:
-# {
-#   "dev_id": "razpi_1",
-#   "ts": "2020-06-18T11:06:00Z",
-#   "temp": 68,
-#   "humidity":42
-# }
-
-# uvicorn --host 192.168.86.183 main:app --reload
-
-# 192.168.86.183:8000/docs
-# 192.168.86.183:8000/redock
-
-# curl -X POST "http://192.168.86.183:8000/readings/" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"dev_id\":\"razpi_1\",\"ts\":\"2020-06-18T11:06:00Z\",\"temp\":68,\"humidity\":42}"
-
-
+import os
+import datetime
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 import pymongo
-import datetime
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+# TODO: Find a better way to deal with this; maybe configparser?
 CONFIG_DATA = {'monbodb_server_url': 'mongodb+srv://razpi:razpipzar@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority',
                'num_continuous_readings_to_check': 4,
-               'temp_range_min': 60,
-               'temp_range_max': 75,
+               'temp_range_min': 65,
+               'temp_range_max': 70,
                'humidity_range_min': 40,
-               'humidity_range_max': 55,
+               'humidity_range_max': 50,
                'alert_renotification_delay': 1,     # num minutes to wait to resend an alert notification email
                'email_from': 'WadeLykkehoy@ZenDataAnalytics.com',
                'email_to': ' WadeLykkehoy@gmail.com'
                }
 
-# TODO: This info should be coming from an environment variable;
-SECRET_DATA = {'SENDGRID_API_KEY': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
-
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 TRACE_MESSAGE_PROCESSING = True         # For debugging; echos message processing calls to stdout
+                                        # TODO: explore the logging library/module for this
+
+# Our API keys and other secret/secure items; load from environment variables
+SECRET_DATA = {'sendgrid_api_key': os.environ.get('sendgrid_api_key')}
+assert SECRET_DATA['sendgrid_api_key'] is not None
+
 
 app = FastAPI()                        # Our FastAPI instance object
 
 
+# =================================================================================================
+# The following code process readings related messages; post / get count / delete
+# =================================================================================================
+
 # Defines the message body that we will receive when a 'reading' message is posted
 class ReadingsMsgBody(BaseModel):
-    dev_id: str
-    ts: str
-    temp: int
-    humidity: int
+    dev_id: str     # a unique ID for the device
+    ts: str         # reading timestamp; in UTC: "2020-06-18T11:06:00Z"
+    temp: int       # temperature in Fahrenheit
+    humidity: int   # humidity as an integer percentage (e.g. 45 for 45%)
 
 
 @app.get("/readings/counts/")
@@ -92,7 +84,7 @@ def send_alert_notification_email(dev_id, alert_type, current_value):
                    to_emails=CONFIG_DATA['email_to'],
                    subject=subject,
                    html_content=html_content)
-    sendgrid_client = SendGridAPIClient(SECRET_DATA['SENDGRID_API_KEY'])
+    sendgrid_client = SendGridAPIClient(SECRET_DATA['sendgrid_api_key'])
     sendgrid_client.send(message)
 
 
@@ -113,7 +105,7 @@ def send_alert_cleared_notification_email(dev_id, alert_type, current_value):
                    to_emails=CONFIG_DATA['email_to'],
                    subject=subject,
                    html_content=html_content)
-    sendgrid_client = SendGridAPIClient(SECRET_DATA['SENDGRID_API_KEY'])
+    sendgrid_client = SendGridAPIClient(SECRET_DATA['sendgrid_api_key'])
     sendgrid_client.send(message)
 
 
@@ -263,33 +255,6 @@ def post_readings(msg_body: ReadingsMsgBody):
     # Clean up by closing our MongoDB connection
     mongodb.close()
 
-    # if TRACE_MESSAGE_PROCESSING:
-    #     print('==> post_readings({})'.format(msg_body), flush=True)
-    #
-    # # #######################################################
-    # # TODO: plug code in from the other file
-    # # #######################################################
-    #
-    # # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    # client = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
-    # db = client.basement_data       # This is the database we are using
-    #
-    # # Package the data into a dict for sending to MongoDB
-    # packaged_data = {'dev_id': msg_body.dev_id,
-    #                  'ts': msg_body.ts,
-    #                  'temp': msg_body.temp,
-    #                  'humidity': msg_body.humidity}
-    # # print(packaged_data, flush=True)
-    # readings = db.readings
-    # foo = readings.insert_one(packaged_data)
-    # # print(foo.acknowledged)
-    #
-    # # Close the MongoDB connection when we are done with it
-    # client.close()
-    #
-    # # TODO: what do I want to return if anything??
-    # return 'OK'
-
 
 @app.delete("/readings/")
 def delete_readings(dev_id: str = Query(None, alias='dev-id')):
@@ -311,6 +276,10 @@ def delete_readings(dev_id: str = Query(None, alias='dev-id')):
 
     return
 
+
+# =================================================================================================
+# The following code processes active_alerts related messages; get count / delete
+# =================================================================================================
 
 @app.get("/active-alerts/counts/")
 def get_active_alerts_counts(dev_id: str = Query(None, alias='dev-id'),
@@ -356,6 +325,10 @@ def delete_active_alerts(dev_id: str = Query(None, alias='dev-id')):
 
     return
 
+
+# =================================================================================================
+# The following code processes alert_history related messages; get count / delete
+# =================================================================================================
 
 @app.get("/alert-history/counts/")
 def get_alert_history_counts(dev_id: str = Query(None, alias='dev-id'),
