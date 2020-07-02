@@ -1,2 +1,3 @@
 .idea
 __pycache__
+api_server/run_mongo_shell.ps1
