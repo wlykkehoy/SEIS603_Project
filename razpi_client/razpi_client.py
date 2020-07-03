@@ -33,14 +33,23 @@ TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 def c_to_f(temp_c):
     """
     Utility function that converts a temperature in Celcius to Farenheit.
+
+    Args:
+        temp_c (float):  The temperature to covert
+
+    Returns:
+        The temperature in Farenheit
     """
     temp_f = (temp_c * 9 / 5) + 32.0
     return temp_f
 
 
-def main_loop(verbose):
+def main(verbose):
     """
     Main loop of the app & where all the fun happens.
+
+    Args:
+        verbose (bool): If True, a lot of info is printed during execution.
     """
     # Our interface objects to the Adafruit SI7021 temp & humidity sensor
     i2c = busio.I2C(board.SCL, board.SDA)
@@ -86,5 +95,5 @@ if __name__ == '__main__':
     verbose = True
     
     print('Client started, press Ctrl-C to stop...', flush=True)
-    main_loop(verbose)
+    main(verbose)
     print('Client stopped', flush=True)
