@@ -1,5 +1,15 @@
 # main.py
 # Wade J Lykkehoy (WadeLykkehoy@gmail.com)
+"""
+This is the server-side code which processes the RESTful requests.  It is based
+on the FastAPI library for RESTful interfaces. It is run as follows:
+
+    uvicorn --host <ip-address> main:app --reload
+  
+    Where <ip-address> is the IP address of the machine hosting the server. 
+    
+    By default, it listens on port 8000.
+"""
 
 import os
 import datetime
@@ -95,7 +105,7 @@ def send_alert_notification_email(dev_id, reading_type, current_value):
         None
     """
     if TRACE_MESSAGE_PROCESSING:
-        print('  ==> send_alert_notification_email({}, {}, {})'.format(dev_id, reading_type, current_value))
+        print('    ==> send_alert_notification_email({}, {}, {})'.format(dev_id, reading_type, current_value))
 
     if reading_type == 'temp':
         subject = '{} - Temperature Alert'.format(dev_id)
@@ -128,7 +138,7 @@ def send_alert_cleared_notification_email(dev_id, reading_type, current_value):
     """
 
     if TRACE_MESSAGE_PROCESSING:
-        print('  ==> send_alert_cleared_notification_email({}, {}, {})'.format(dev_id, reading_type, current_value))
+        print('    ==> send_alert_cleared_notification_email({}, {}, {})'.format(dev_id, reading_type, current_value))
 
     if reading_type == 'temp':
         subject = '{} - Temperature Alert Cleared'.format(dev_id)
@@ -182,7 +192,7 @@ def renotify_if_notification_delay_exceeded(db, dev_id, reading_type, current_va
         None
     """
     if TRACE_MESSAGE_PROCESSING:
-        print('  ==> renotify_if_notification_delay_exceeded({}, {}, {})'.format(dev_id, reading_type, current_value))
+        print('    ==> renotify_if_notification_delay_exceeded({}, {}, {})'.format(dev_id, reading_type, current_value))
 
     # First, fetch the active alert record from the DB
     query = {'dev_id': dev_id,
@@ -219,7 +229,7 @@ def handle_out_of_range_condition(db, dev_id, reading_type, current_value):
         None
     """
     if TRACE_MESSAGE_PROCESSING:
-        print('  ==> handle_alert_condition({}, {}, {})'.format(dev_id, reading_type, current_value))
+        print('  ==> handle_out_of_range_condition({}, {}, {})'.format(dev_id, reading_type, current_value))
 
     if is_an_existing_active_alert(db, dev_id, reading_type):     # we are continuing an existing out of range condition
         renotify_if_notification_delay_exceeded(db, dev_id, reading_type, current_value)
@@ -250,7 +260,7 @@ def handle_in_range_condition(db, dev_id, reading_type, current_value):
         None
     """
     if TRACE_MESSAGE_PROCESSING:
-        print('  ==> clear_active_alert_if_is_one({}, {}, {})'.format(dev_id, reading_type, current_value))
+        print('  ==> handle_in_range_condition({}, {}, {})'.format(dev_id, reading_type, current_value))
 
     if is_an_existing_active_alert(db, dev_id, reading_type):
         # First, fetch the active alert record
@@ -293,7 +303,7 @@ def handle_mixed_in_and_out_of_range_condition(db, dev_id, reading_type, current
         None
     """
     if TRACE_MESSAGE_PROCESSING:
-        print('  ==> continue_current_condition({}, {}, {})'.format(dev_id, reading_type, current_value))
+        print('  ==> handle_mixed_in_and_out_of_range_condition({}, {}, {})'.format(dev_id, reading_type, current_value))
 
     if is_an_existing_active_alert(db, dev_id, reading_type):  # Check if it it time to resend notification
         renotify_if_notification_delay_exceeded(db, dev_id, reading_type, current_value)

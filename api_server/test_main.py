@@ -1,5 +1,26 @@
 # test_main.py
 # Wade J Lykkehoy (WadeLykkehoy@gmail.com)
+"""
+This is the server testing code. It is based on the pytest framework. It also
+allows running tests to be run directly (vs through pytest). This allows a 
+'verboase' mode where key points of the processing are echoed to stdout. Handy
+when developing individual tests to ensure the sequence is as intended.
+
+When run directly rather than via pytest the behavior depends on the
+command line arguments:
+    no arguments - Dump a list of tests in this file
+    -t <test>    - Run only <test>
+    -v           - Verbose mode; really only makes sense with -t <test>; this combo
+                   is handy for running a single test outside of pytest for debugging
+                 
+Examples:
+
+    pytest test_main.py                     - Runs all tests via pytest
+    pytest test_main.py:test-name           - Runs test, test-name, under pytest 
+    
+    python test_main.py                     - Dumps a list of tests
+    python test_main.py -v -t test-name     - Runs test, test-name, in verbose mode
+"""
 
 import sys
 import argparse
@@ -238,13 +259,6 @@ def test_trigger_and_clear_temp_alert():
 
 
 def main():
-    # When run directly rather than via pytest the behavior depends on the
-    # command line arguments:
-    #   no arguments - Dump a list of tests in this file
-    #   -t <test>    - Run only <test>
-    #   -v           - Verbose mode; really only makes sense with -t <test>; this combo
-    #                  is handy for running a single test outside of pytest for debugging
-
     global verbose     # I know, not good practice...
 
     # Extract command line args
