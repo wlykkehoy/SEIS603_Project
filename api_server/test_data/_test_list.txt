@@ -3,21 +3,20 @@ Test cases:
 X posting 1 message, single device, temp and humidity readings in range
 X posting sequence from single device, temp and humidity readings in range (thus no alert nor alert to clear)
 
-X posting sequence from single device that causes a temp alert
+X posting sequence from single device that causes a temp alert; high readings
+X posting sequence from single device that causes a temp alert; low readings
 X posting sequence from single device that causes a temp alert then clears alert
+X posting sequence from single device that causes a temp alert, then seq of readings in and out of range
+X posting sequence from single device with temp readings in and out of range
 posting sequence from single device that causes a temp alert and alert renotification (if renotification is daily, how??)
 posting sequence from single device that causes & continues temp alert within renotification window (thus no renotification)
 
+X posting sequence from single device that causes a humidity alert; high readings
+X posting sequence from single device that causes a humidity alert; low readings
+X posting sequence from single device that causes a humidity alert then clears alert
+X posting sequence from single device that causes a humidity alert, then seq of readings in and out of range
+X posting sequence from single device with humidity readings in and out of range
+posting sequence from single device that causes a humidity alert and alert renotification (if renotification is daily, how??)
+posting sequence from single device that causes & continues humidity alert within renotification window (thus no renotification)
 
-posting sequence from single device where readings are in and out of range; no existing alert
-posting sequence from single device where readings are in and out of range; existing alert
-
-
-
-< temp ones also applied to humidity >
-
-< combo temp and humidity ?>
-
-< multiple devices >
-
-How do I progmatically confirm an email was sent??
+X post sequence fron single device that causes both a temp alert and humidity alert

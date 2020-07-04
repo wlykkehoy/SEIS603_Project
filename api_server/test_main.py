@@ -129,7 +129,7 @@ def send_sensor_reading_messages(message_filename):
     assert(len(tests) > 0)      # an empty test data file should never happen...
 
     # For each message to send, package the data and send via POST
-    response = None     # here just to get rid of PEP8 warning that reponse may not be set when return is hit
+    response = None     # here just to get rid of PEP8 warning that response may not be set when return is hit
     for idx, message_data in tests.iterrows():
         packaged_data = {'dev_id': message_data['dev_id'],
                          'ts': message_data['ts'],
@@ -165,6 +165,16 @@ def test_1_message_in_range():
     assert status == 200
     assert count == 1
 
+    # Confirm no alert was generated
+    status, count = resource_count('active_alerts', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
 
 def test_10_messages_in_range():
     """
@@ -190,18 +200,23 @@ def test_10_messages_in_range():
     assert status == 200
     assert count == 0
 
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
 
-def test_trigger_temp_alert():
+
+def test_trigger_temp_alert_high_readings():
     """
-    Test triggering a temperature alert.
+    Test triggering a temperature alert based on high temperature readings.
 
-    Data file: test_trigger_temp_alert.csv
+    Data file: test_trigger_temp_alert_high_readings.csv
     """
     # Wipe the DB for our test device
     delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
 
     # Send the readings
-    status = send_sensor_reading_messages('test_trigger_temp_alert.csv')
+    status = send_sensor_reading_messages('test_trigger_temp_alert_high_readings.csv')
     assert status == 200
 
     # Confirm the correct count of readings got stored in the DB
@@ -214,10 +229,44 @@ def test_trigger_temp_alert():
     assert status == 200
     assert count == 1
 
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+
+def test_trigger_temp_alert_low_readings():
+    """
+    Test triggering a temperature alert based on low temperature readings.
+
+    Data file: test_trigger_temp_alert_low_readings.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_trigger_temp_alert_low_readings.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 10
+
+    # Confirm alert was generated for temperature
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'temp')
+    assert status == 200
+    assert count == 1
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
 
 def test_trigger_and_clear_temp_alert():
     """
-    Test triggering a temperature alert.
+    Test triggering a temperature alert then clearing it.
 
     Data file: test_trigger_and_clear_temp_alert_pt1.csv & test_trigger_and_clear_temp_alert_pt2.csv
     """
@@ -256,6 +305,261 @@ def test_trigger_and_clear_temp_alert():
     status, count = resource_count('alert_history', 'razpi_sim_01', 'temp')
     assert status == 200
     assert count == 1
+
+
+def test_temp_alert_then_readings_in_and_out_of_range():
+    """
+    Test triggering a temp alert, then readings continue, alternating in and
+    out of range. The alert condition should continue.
+
+    Data file: test_temp_alert_then_readings_in_and_out_of_range.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_temp_alert_then_readings_in_and_out_of_range.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 15
+
+    # Confirm alert was generated for temperature
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'temp')
+    assert status == 200
+    assert count == 1
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+
+def test_temp_readings_in_and_out_of_range():
+    """
+    Test temperature readings alternating between in and out of range. No alert should
+    occur.
+
+    Data file: test_temp_readings_in_and_out_of_range.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_temp_readings_in_and_out_of_range.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 15
+
+    # Confirm no alert was generated for temperature
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'temp')
+    assert status == 200
+    assert count == 0
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+
+def test_trigger_humidity_alert_high_readings():
+    """
+    Test triggering a humidity alert based on high humidity readings.
+
+    Data file: test_trigger_humidity_alert_high_readings.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_trigger_humidity_alert_high_readings.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 10
+
+    # Confirm alert was generated for humidity
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 1
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+
+def test_trigger_humidity_alert_low_readings():
+    """
+    Test triggering a humidity alert based on low humidity readings.
+
+    Data file: test_trigger_humidity_alert_low_readings.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_trigger_humidity_alert_low_readings.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 10
+
+    # Confirm alert was generated for humidity
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 1
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+
+def test_trigger_and_clear_humidity_alert():
+    """
+    Test triggering a temperature alert then clearing it.
+
+    Data file: test_trigger_and_clear_humidity_alert_pt1.csv & test_trigger_and_clear_humidity_alert_pt2.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the first part of the readings; should trigger the alert
+    status = send_sensor_reading_messages('test_trigger_and_clear_humidity_alert_pt1.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 5
+
+    # Confirm alert was generated for humidity
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 1
+
+    # Send the second part of the readings; should clear the alert
+    status = send_sensor_reading_messages('test_trigger_and_clear_humidity_alert_pt2.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 10
+
+    # Confirm alert was cleared
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 0
+
+    # And we should now have a record in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 1
+
+
+def test_humidity_alert_then_readings_in_and_out_of_range():
+    """
+    Test triggering a humidity alert, then readings continue, alternating in and
+    out of range. The alert condition should continue.
+
+    Data file: test_humidity_alert_then_readings_in_and_out_of_range.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_humidity_alert_then_readings_in_and_out_of_range.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 15
+
+    # Confirm alert was generated for temperature
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 1
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+
+def test_humidity_readings_in_and_out_of_range():
+    """
+    Test humidity readings alternating between in and out of range. No alert should
+    occur.
+
+    Data file: test_humidity_readings_in_and_out_of_range.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_humidity_readings_in_and_out_of_range.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 15
+
+    # Confirm alert was generated for temperature
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 0
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
+
+
+def test_trigger_temp_and_humidity_alert():
+    """
+    Test triggering both a temperature and a humidity alert.
+
+    Data file: test_trigger_temp_and_humidity_alert.csv
+    """
+    # Wipe the DB for our test device
+    delete_resources(['readings', 'active_alerts', 'alert_history'], 'razpi_sim_01')
+
+    # Send the readings
+    status = send_sensor_reading_messages('test_trigger_temp_and_humidity_alert.csv')
+    assert status == 200
+
+    # Confirm the correct count of readings got stored in the DB
+    status, count = resource_count('readings', 'razpi_sim_01')
+    assert status == 200
+    assert count == 10
+
+    # Confirm alert was generated for temperature
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'temp')
+    assert status == 200
+    assert count == 1
+
+    # Confirm alert was generated for humidity
+    status, count = resource_count('active_alerts', 'razpi_sim_01', 'humidity')
+    assert status == 200
+    assert count == 1
+
+    # And there should be nothing in alert history
+    status, count = resource_count('alert_history', 'razpi_sim_01')
+    assert status == 200
+    assert count == 0
 
 
 def main():

@@ -21,44 +21,57 @@ from sendgrid.helpers.mail import Mail
 import enum
 
 
-# TODO: Find a better way to deal with this; maybe configparser or store in the MongoDB?
-CONFIG_DATA = {'monbodb_server_url': 'mongodb+srv://razpi:razpipzar@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority',
-               'num_continuous_readings_to_check': 4,
-               'temp_range_min': 65,
-               'temp_range_max': 70,
-               'humidity_range_min': 40,
-               'humidity_range_max': 50,
-               'alert_renotification_delay': 1,     # num minutes to wait to resend an alert notification email
-               'email_from': 'WadeLykkehoy@ZenDataAnalytics.com',
-               'email_to': ' WadeLykkehoy@gmail.com'
-               }
+# =================================================================================================
+# FastAPI requires instantiation of the FastAPI object and other declarations/initializations
+# to be here vs inside a main() function.
+# =================================================================================================
+
+app = FastAPI()         # Our FastAPI instance object; this starts the whole process
+
+CONFIG_DATA = {}        # Configuration data; will load on startup
+SECRET_DATA = {}        # Secret data, keys and such; will load on startup
 
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
+TRACE_MESSAGE_PROCESSING = True         # For debugging; echos message processing calls to stdout
+                                        # TODO: explore the logging library/module for this
+
 
 @enum.unique
 class ReadingType(enum.Enum):
     TEMP = 1
     HUMIDITY = 2
+
     def __str__(self):
         if self.value == 1:
             return 'temp'
         else:
             return 'humidity'
 
-TRACE_MESSAGE_PROCESSING = True         # For debugging; echos message processing calls to stdout
-                                        # TODO: explore the logging library/module for this
 
+@app.on_event("startup")
+async def startup_event():
+    """
+    Stuff to do when the server starts up. Here we load configuration data needed throughout.
 
-# =================================================================================================
-# The following code loads our secret data (keys) and instantiates the FastAPI instances.
-# The FastAPI implementation requires this code to be here vs inside a main() function.
-# =================================================================================================
+    Returns:
+        None
+    """
+    # Load general configuration data
+    # TODO: Find a better way to deal with this; maybe configparser or store in the MongoDB?
+    CONFIG_DATA['monbodb_server_url'] = 'mongodb+srv://razpi:razpipzar@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority'
+    CONFIG_DATA['num_continuous_readings_to_check'] = 4
+    CONFIG_DATA['temp_range_min'] = 65
+    CONFIG_DATA['temp_range_max'] = 70
+    CONFIG_DATA['humidity_range_min'] = 40
+    CONFIG_DATA['humidity_range_max'] = 50
+    CONFIG_DATA['alert_renotification_delay'] = 1       # num minutes to wait to resend an alert notification email
+    CONFIG_DATA['email_from'] = 'WadeLykkehoy@ZenDataAnalytics.com'
+    CONFIG_DATA['email_to'] = ' WadeLykkehoy@gmail.com'
 
-# Our API keys and other secret/secure items; load from environment variables
-SECRET_DATA = {'sendgrid_api_key': os.environ.get('sendgrid_api_key')}
-assert SECRET_DATA['sendgrid_api_key'] is not None
-
-app = FastAPI()                        # Our FastAPI instance object
+    # Load secret key data from OS environment vars
+    SECRET_DATA['sendgrid_api_key'] = os.environ.get('sendgrid_api_key')
+    assert SECRET_DATA['sendgrid_api_key'] is not None
 
 
 # =================================================================================================
@@ -351,8 +364,13 @@ def recent_readings_range_check(db, dev_id):
                        (doc['humidity'] > CONFIG_DATA['humidity_range_max'])
         humidity_out_of_range.append(check_result)
 
-    return all(temp_out_of_range), not any(temp_out_of_range), all(humidity_out_of_range), not any(
-        humidity_out_of_range)
+    if len(temp_out_of_range) < CONFIG_DATA['num_continuous_readings_to_check']:
+        # When we have less history than needed to make an in range / out of range determination (will
+        # only happen on initial startup of a new device), we will just treat it as though everything is in range.
+        return False, True, False, True
+    else:
+        return all(temp_out_of_range), not any(temp_out_of_range), \
+               all(humidity_out_of_range), not any(humidity_out_of_range)
 
 
 @app.post("/readings/")
