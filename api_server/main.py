@@ -18,18 +18,18 @@ from pydantic import BaseModel
 import pymongo
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+import enum
 
-# TODO: Find a better way to deal with this; maybe configparser or store in the MongoDB?
-CONFIG_DATA = {'monbodb_server_url': 'mongodb+srv://razpi:razpipzar@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority',
-               'num_continuous_readings_to_check': 4,
-               'temp_range_min': 65,
-               'temp_range_max': 70,
-               'humidity_range_min': 40,
-               'humidity_range_max': 50,
-               'alert_renotification_delay': 1,     # num minutes to wait to resend an alert notification email
-               'email_from': 'WadeLykkehoy@ZenDataAnalytics.com',
-               'email_to': ' WadeLykkehoy@gmail.com'
-               }
+
+# =================================================================================================
+# FastAPI requires instantiation of the FastAPI object and other declarations/initializations
+# to be here vs inside a main() function.
+# =================================================================================================
+
+app = FastAPI()         # Our FastAPI instance object; this starts the whole process
+
+CONFIG_DATA = {}        # Configuration data; will load on startup
+SECRET_DATA = {}        # Secret data, keys and such; will load on startup
 
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -37,16 +37,41 @@ TRACE_MESSAGE_PROCESSING = True         # For debugging; echos message processin
                                         # TODO: explore the logging library/module for this
 
 
-# =================================================================================================
-# The following code loads our secret data (keys) and instantiates the FastAPI instances.
-# The FastAPI implementation requires this code to be here vs inside a main() function.
-# =================================================================================================
+@enum.unique
+class ReadingType(enum.Enum):
+    TEMP = 1
+    HUMIDITY = 2
 
-# Our API keys and other secret/secure items; load from environment variables
-SECRET_DATA = {'sendgrid_api_key': os.environ.get('sendgrid_api_key')}
-assert SECRET_DATA['sendgrid_api_key'] is not None
+    def __str__(self):
+        if self.value == 1:
+            return 'temp'
+        else:
+            return 'humidity'
 
-app = FastAPI()                        # Our FastAPI instance object
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Stuff to do when the server starts up. Here we load configuration data needed throughout.
+
+    Returns:
+        None
+    """
+    # Load general configuration data
+    # TODO: Find a better way to deal with this; maybe configparser or store in the MongoDB?
+    CONFIG_DATA['monbodb_server_url'] = 'mongodb+srv://razpi:razpipzar@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority'
+    CONFIG_DATA['num_continuous_readings_to_check'] = 4
+    CONFIG_DATA['temp_range_min'] = 65
+    CONFIG_DATA['temp_range_max'] = 70
+    CONFIG_DATA['humidity_range_min'] = 40
+    CONFIG_DATA['humidity_range_max'] = 50
+    CONFIG_DATA['alert_renotification_delay'] = 1       # num minutes to wait to resend an alert notification email
+    CONFIG_DATA['email_from'] = 'WadeLykkehoy@ZenDataAnalytics.com'
+    CONFIG_DATA['email_to'] = ' WadeLykkehoy@gmail.com'
+
+    # Load secret key data from OS environment vars
+    SECRET_DATA['sendgrid_api_key'] = os.environ.get('sendgrid_api_key')
+    assert SECRET_DATA['sendgrid_api_key'] is not None
 
 
 # =================================================================================================
@@ -97,9 +122,9 @@ def send_alert_notification_email(dev_id, reading_type, current_value):
     Send an alert notification email using SendGrid.
 
     Args:
-        dev_id (int):           ID of the device for which the alert occurred
-        reading_type (str):     Type of reading; either 'temp' or 'humidity'
-        current_value (int):    Current value for either 'temp' or 'humidity'
+        dev_id (int):                 ID of the device for which the alert occurred
+        reading_type (ReadingType):   Type of reading;
+        current_value (int):          Current value for the reading
 
     Returns:
         None
@@ -107,7 +132,7 @@ def send_alert_notification_email(dev_id, reading_type, current_value):
     if TRACE_MESSAGE_PROCESSING:
         print('    ==> send_alert_notification_email({}, {}, {})'.format(dev_id, reading_type, current_value))
 
-    if reading_type == 'temp':
+    if reading_type == ReadingType.TEMP:
         subject = '{} - Temperature Alert'.format(dev_id)
         html_content = '<p><h2>{} Temperature Alert</h2></p>'.format(dev_id)
         html_content += '<p>Current temperature is {}F.</p>'.format(current_value)
@@ -129,18 +154,17 @@ def send_alert_cleared_notification_email(dev_id, reading_type, current_value):
     Send an alert cleared notification email using SendGrid.
 
     Args:
-        dev_id (int):           ID of the device for which the alert occurred and is now cleared
-        reading_type (str):     Type of reading; either 'temp' or 'humidity'
-        current_value (int):    Current value for either 'temp' or 'humidity' for the device
+        dev_id (int):                 ID of the device for which the alert occurred and is now cleared
+        reading_type (ReadingType):   Type of reading
+        current_value (int):          Current value for the reading
 
     Returns:
         None
     """
-
     if TRACE_MESSAGE_PROCESSING:
         print('    ==> send_alert_cleared_notification_email({}, {}, {})'.format(dev_id, reading_type, current_value))
 
-    if reading_type == 'temp':
+    if reading_type == ReadingType.TEMP:
         subject = '{} - Temperature Alert Cleared'.format(dev_id)
         html_content = '<p><h2>{} Temperature Alert Cleared</h2></p>'.format(dev_id)
         html_content += '<p>Current temperature is {}F.</p>'.format(current_value)
@@ -163,15 +187,15 @@ def is_an_existing_active_alert(db, dev_id, reading_type):
     active alert records for this device/reading_type in the DB.
 
     Args:
-        db:                   Connection to our MongoDB database
-        dev_id (str):         Device ID to check for active alerts
-        reading_type (str):   Type of reading; 'temp' or 'humidity'
+        db:                           Connection to our MongoDB database
+        dev_id (str):                 Device ID to check for active alerts
+        reading_type (ReadingType):   Type of reading
 
     Returns:
         True if there is an existing alert of type reading_type for dev_id; else False
     """
     query = {'dev_id': dev_id,
-             'reading_type': reading_type}
+             'reading_type': str(reading_type)}
     num_docs = db.active_alerts.count_documents(query)
     return num_docs > 0
 
@@ -183,10 +207,10 @@ def renotify_if_notification_delay_exceeded(db, dev_id, reading_type, current_va
     email, we have a delay time between email sends.
 
     Args:
-        db:                   Connection to our MongoDB database
-        dev_id (str):         Device ID to check for active alerts
-        reading_type (str):   Type of reading; 'temp' or 'humidity'
-        current_value (int):  Current value for either 'temp' or 'humidity' for the device
+        db:                           Connection to our MongoDB database
+        dev_id (str):                 Device ID to check for active alerts
+        reading_type (ReadingType):   Type of reading
+        current_value (int):          Current value for the reading
 
     Returns:
         None
@@ -196,7 +220,7 @@ def renotify_if_notification_delay_exceeded(db, dev_id, reading_type, current_va
 
     # First, fetch the active alert record from the DB
     query = {'dev_id': dev_id,
-             'reading_type': reading_type}
+             'reading_type': str(reading_type)}
     docs = db.active_alerts.find(query)
 
     # Calculate how much time has elapsed since a notification was sent
@@ -220,10 +244,10 @@ def handle_out_of_range_condition(db, dev_id, reading_type, current_value):
     treat it as a continuation of that active alert. If there is no active alert, create one.
 
     Args:
-        db:                   Connection to our MongoDB database
-        dev_id (str):         Device ID to check for active alerts
-        reading_type (str):   Type of reading; 'temp' or 'humidity'
-        current_value (int):  Current value for either 'temp' or 'humidity' for the device
+        db:                           Connection to our MongoDB database
+        dev_id (str):                 Device ID to check for active alerts
+        reading_type (ReadingType):   Type of reading
+        current_value (int):          Current value for the reading
 
     Returns:
         None
@@ -237,7 +261,7 @@ def handle_out_of_range_condition(db, dev_id, reading_type, current_value):
         now = datetime.datetime.now()
         formatted_ts = now.strftime(TIMESTAMP_FORMAT)
         data = {'dev_id': dev_id,
-                'reading_type': reading_type,
+                'reading_type': str(reading_type),
                 'originated_ts': formatted_ts,
                 'notification_ts': formatted_ts}
         db.active_alerts.insert_one(data)
@@ -251,10 +275,10 @@ def handle_in_range_condition(db, dev_id, reading_type, current_value):
     is no active alert, no action needed.
 
     Args:
-        db:                   Connection to our MongoDB database
-        dev_id (str):         Device ID to check for active alerts
-        reading_type (str):   Type of reading; 'temp' or 'humidity'
-        current_value (int):  Current value for either 'temp' or 'humidity' for the device
+        db:                           Connection to our MongoDB database
+        dev_id (str):                 Device ID to check for active alerts
+        reading_type (ReadingType):   Type of reading
+        current_value (int):          Current value for the reading
 
     Returns:
         None
@@ -265,14 +289,14 @@ def handle_in_range_condition(db, dev_id, reading_type, current_value):
     if is_an_existing_active_alert(db, dev_id, reading_type):
         # First, fetch the active alert record
         query = {'dev_id': dev_id,
-                 'reading_type': reading_type}
+                 'reading_type': str(reading_type)}
         docs = db.active_alerts.find(query)
 
         # Put a record into our alert history
         now = datetime.datetime.now()
         formatted_ts = now.strftime(TIMESTAMP_FORMAT)
         data = {'dev_id': dev_id,
-                'reading_type': reading_type,
+                'reading_type': str(reading_type),
                 'originated_ts': docs[0]['originated_ts'],
                 'cleared_ts': formatted_ts}
         db.alert_history.insert_one(data)
@@ -280,7 +304,7 @@ def handle_in_range_condition(db, dev_id, reading_type, current_value):
         # Remove the active alert record (should be just 1, however
         #  using delete_many is a 'DB self cleaning' tactic
         query = {'dev_id': dev_id,
-                 'reading_type': reading_type}
+                 'reading_type': str(reading_type)}
         db.active_alerts.delete_many(query)
 
         # Send an email indicating an active alert was cleared
@@ -294,10 +318,10 @@ def handle_mixed_in_and_out_of_range_condition(db, dev_id, reading_type, current
     alert, treat it as a non-alert condition, hence no additional action needed.
 
     Args:
-        db:                   Connection to our MongoDB database
-        dev_id (str):         Device ID to check for active alerts
-        reading_type (str):   Type of reading; 'temp' or 'humidity'
-        current_value (int):  Current value for either 'temp' or 'humidity' for the device
+        db:                           Connection to our MongoDB database
+        dev_id (str):                 Device ID to check for active alerts
+        reading_type (ReadingType):   Type of reading
+        current_value (int):          Current value for the reading
 
     Returns:
         None
@@ -340,8 +364,13 @@ def recent_readings_range_check(db, dev_id):
                        (doc['humidity'] > CONFIG_DATA['humidity_range_max'])
         humidity_out_of_range.append(check_result)
 
-    return all(temp_out_of_range), not any(temp_out_of_range), all(humidity_out_of_range), not any(
-        humidity_out_of_range)
+    if len(temp_out_of_range) < CONFIG_DATA['num_continuous_readings_to_check']:
+        # When we have less history than needed to make an in range / out of range determination (will
+        # only happen on initial startup of a new device), we will just treat it as though everything is in range.
+        return False, True, False, True
+    else:
+        return all(temp_out_of_range), not any(temp_out_of_range), \
+               all(humidity_out_of_range), not any(humidity_out_of_range)
 
 
 @app.post("/readings/")
@@ -371,19 +400,19 @@ def post_readings(msg_body: ReadingsMsgBody):
 
     # Take appropriate action for temp
     if temp_all_out_of_range:
-        handle_out_of_range_condition(db, msg_body.dev_id, 'temp', msg_body.temp)
+        handle_out_of_range_condition(db, msg_body.dev_id, ReadingType.TEMP, msg_body.temp)
     elif temp_all_in_range:
-        handle_in_range_condition(db, msg_body.dev_id, 'temp', msg_body.temp)
+        handle_in_range_condition(db, msg_body.dev_id, ReadingType.TEMP, msg_body.temp)
     else:
-        handle_mixed_in_and_out_of_range_condition(db, msg_body.dev_id, 'temp', msg_body.temp)
+        handle_mixed_in_and_out_of_range_condition(db, msg_body.dev_id, ReadingType.TEMP, msg_body.temp)
 
     # Take appropriate action for humidity
     if humidity_all_out_of_range:
-        handle_out_of_range_condition(db, msg_body.dev_id, 'humidity', msg_body.humidity)
+        handle_out_of_range_condition(db, msg_body.dev_id, ReadingType.HUMIDITY, msg_body.humidity)
     elif humidity_all_in_range:
-        handle_in_range_condition(db, msg_body.dev_id, 'humidity', msg_body.humidity)
+        handle_in_range_condition(db, msg_body.dev_id, ReadingType.HUMIDITY, msg_body.humidity)
     else:
-        handle_mixed_in_and_out_of_range_condition(db, msg_body.dev_id, 'humidity', msg_body.humidity)
+        handle_mixed_in_and_out_of_range_condition(db, msg_body.dev_id, ReadingType.HUMIDITY, msg_body.humidity)
 
     # Clean up by closing our MongoDB connection
     mongodb.close()
@@ -430,6 +459,7 @@ def get_active_alerts_counts(dev_id: str = Query(None,
                                                  description='ID of the device'),
                              reading_type: str = Query(None,
                                                        alias='reading-type',
+                                                       regex='^temp$|^humidity$',
                                                        description='Reading type; \'temp\' or \'humidity\'')):
     # Note the docstring is picked up by the OpenAPI doc tools, thus only include info
     # that makes sense from an API end-user's perspective.
@@ -503,6 +533,7 @@ def get_alert_history_counts(dev_id: str = Query(None,
                                                  description='ID of the device'),
                              reading_type: str = Query(None,
                                                        alias='reading-type',
+                                                       regex='^temp$|^humidity$',
                                                        description='Reading type; \'temp\' or \'humidity\'')):
     # Note the docstring is picked up by the OpenAPI doc tools, thus only include info
     # that makes sense from an API end-user's perspective.
