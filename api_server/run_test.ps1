@@ -29,4 +29,4 @@
 
 
 # *** Run the entire test suite via pytest; uncomment to run ***
-#clear; pytest test_main.py
+clear; pytest test_main.py
