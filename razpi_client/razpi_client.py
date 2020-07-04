@@ -17,13 +17,18 @@ import board
 import busio
 import adafruit_si7021
 import requests
+import collections
 
 
 # Some configuration data
 # TODO: find a better way to deal with this info
 CONFIG_DATA = {
-    'device_id': 'RazPi_01',                  # name for the device; used in messages
-    'delay_between_readings': 5,              # delay in seconds between sensor readings
+    'device_id': 'RazPi_01',                      # name for the device; used in messages
+    'delay_between_readings': 5,                  # delay in seconds between sensor readings
+    'num_recent_post_status_codes_to_look_at': 4, # we might expect a failed POST periodically,
+                                                  #  thus will look at this many most-recent POST reqeust
+                                                  #   status codes to determine if there is an issue and
+                                                  #   should bail
     'post_readings_url': 'http://192.168.86.183:8000/readings/'
 }
 
@@ -51,6 +56,9 @@ def main(verbose):
     Args:
         verbose (bool): If True, a lot of info is printed during execution.
     """
+    recent_post_status_codes_ok = collections.deque([True] *  CONFIG_DATA['num_recent_post_status_codes_to_look_at'],
+                                                    maxlen=CONFIG_DATA['num_recent_post_status_codes_to_look_at'])
+        
     # Our interface objects to the Adafruit SI7021 temp & humidity sensor
     i2c = busio.I2C(board.SCL, board.SDA)
     sensor = adafruit_si7021.SI7021(i2c)
@@ -75,10 +83,13 @@ def main(verbose):
             if verbose:
                 print('  <=Status:{}\n    Content:{}'.format(response.status_code, response.content), flush=True)
 
-# <<< what should I do if I get a non-200 back??? >>>
-#        if response.status_code != 200:         # stop on the first failing POST
-#            break
-   
+            # Keep track of the most recent status codes; if none were successful, bail
+            recent_post_status_codes_ok.append(response.status_code == 200)
+            if not any(recent_post_status_codes_ok):
+                print('ERROR: The most recent {} POSTs have failed; halting execution'.format(CONFIG_DATA['num_recent_post_status_codes_to_look_at']))
+                break
+           
+            # A delay before sending the next reading
             time.sleep(CONFIG_DATA['delay_between_readings'])
             
     except KeyboardInterrupt:
