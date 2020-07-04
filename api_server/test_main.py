@@ -37,7 +37,7 @@ CONFIG_DATA = {'get_count_url': {'readings':      'http://' + IP_ADDR + '/readin
                'delete_url': {'readings':      'http://' + IP_ADDR + '/readings/',
                               'active_alerts': 'http://' + IP_ADDR + '/active-alerts/',
                               'alert_history': 'http://' + IP_ADDR + '/alert-history/'},
-               'post_url': {'readings': 'http://'+IP_ADDR+'/readings/'},
+               'post_url': {'readings': 'http://' + IP_ADDR + '/readings/'},
                'test_data_subdir': 'test_data'}
 
 

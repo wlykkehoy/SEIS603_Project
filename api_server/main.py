@@ -57,9 +57,20 @@ async def startup_event():
     Returns:
         None
     """
+    # Load secret key / user id / password data from OS environment vars; note the use
+    #  of assert() ensures the environment is set up correctly
+    SECRET_DATA['sendgrid_api_key'] = os.environ.get('sendgrid_api_key')
+    assert SECRET_DATA['sendgrid_api_key'] is not None
+    SECRET_DATA['mongodb_uid'] = os.environ.get('mongodb_uid')
+    assert SECRET_DATA['mongodb_uid'] is not None
+    SECRET_DATA['mongodb_pw'] = os.environ.get('mongodb_pw')
+    assert SECRET_DATA['mongodb_pw'] is not None
+
     # Load general configuration data
     # TODO: Find a better way to deal with this; maybe configparser or store in the MongoDB?
-    CONFIG_DATA['monbodb_server_url'] = 'mongodb+srv://razpi:razpipzar@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority'
+    CONFIG_DATA['mongodb_server_url'] = \
+        'mongodb+srv://{uid}:{pw}@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority'.\
+        format(uid=SECRET_DATA['mongodb_uid'], pw=SECRET_DATA['mongodb_pw'])
     CONFIG_DATA['num_continuous_readings_to_check'] = 4
     CONFIG_DATA['temp_range_min'] = 65
     CONFIG_DATA['temp_range_max'] = 70
@@ -68,10 +79,6 @@ async def startup_event():
     CONFIG_DATA['alert_renotification_delay'] = 1       # num minutes to wait to resend an alert notification email
     CONFIG_DATA['email_from'] = 'WadeLykkehoy@ZenDataAnalytics.com'
     CONFIG_DATA['email_to'] = ' WadeLykkehoy@gmail.com'
-
-    # Load secret key data from OS environment vars
-    SECRET_DATA['sendgrid_api_key'] = os.environ.get('sendgrid_api_key')
-    assert SECRET_DATA['sendgrid_api_key'] is not None
 
 
 # =================================================================================================
@@ -102,7 +109,7 @@ def get_readings_counts(dev_id: str = Query(None,
         print('==> get_readings_counts({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
+    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
     db = client.basement_data       # This is the database we are using
 
     # Do the count for either all or the specified device
@@ -384,7 +391,7 @@ def post_readings(msg_body: ReadingsMsgBody):
         print('==> post_readings({})'.format(msg_body.__dict__), flush=True)
 
     # Connect to the MongoDB server and select the database
-    mongodb = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
+    mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
     db = mongodb.basement_data
 
     # Store this reading into our DB
@@ -434,7 +441,7 @@ def delete_readings(dev_id: str = Query(None,
         print('==> delete_readings({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
+    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
     db = client.basement_data       # This is the database we are using
 
     # Whack 'em; either all or for a specified device id
@@ -475,7 +482,7 @@ def get_active_alerts_counts(dev_id: str = Query(None,
         print('==> get_active_alerts_counts({}, {})'.format(dev_id, reading_type), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
+    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
     db = client.basement_data       # This is the database we are using
 
     # Fetch the count
@@ -508,7 +515,7 @@ def delete_active_alerts(dev_id: str = Query(None,
         print('==> delete_active_alerts({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
+    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
     db = client.basement_data       # This is the database we are using
 
     # Whack 'em; either all or for a specified device id
@@ -549,7 +556,7 @@ def get_alert_history_counts(dev_id: str = Query(None,
         print('==> get_alert_history_counts({}, {})'.format(dev_id, reading_type), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
+    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
     db = client.basement_data       # This is the database we are using
 
     # Do the count
@@ -582,7 +589,7 @@ def delete_alert_history(dev_id: str = Query(None,
         print('==> delete_alert_history({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['monbodb_server_url'])
+    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
     db = client.basement_data       # This is the database we are using
 
     # Whack 'em; either all or for a specified device id
