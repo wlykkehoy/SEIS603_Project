@@ -24,7 +24,7 @@ import collections
 # TODO: find a better way to deal with this info
 CONFIG_DATA = {
     'device_id': 'RazPi_01',                      # name for the device; used in messages
-    'delay_between_readings': 5,                  # delay in seconds between sensor readings
+    'delay_between_readings': 5,                  # delay in seconds between sensor readings; 900 = 15min
     'num_recent_post_status_codes_to_look_at': 4, # we might expect a failed POST periodically,
                                                   #  thus will look at this many most-recent POST reqeust
                                                   #   status codes to determine if there is an issue and
@@ -68,7 +68,6 @@ def main(verbose):
             temp_c = sensor.temperature
             temp_f = int(round(c_to_f(temp_c), 0))                  # only want integer portion
             humidity =  int(round(sensor.relative_humidity, 0))     # only want integer portion
-            # timestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time.time()))
             now = datetime.datetime.now()
             timestamp = now.strftime(TIMESTAMP_FORMAT)
             
