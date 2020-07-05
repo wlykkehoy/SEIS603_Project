@@ -11,7 +11,7 @@
 # *** Individual temperature tests; uncomment the one(s) you wish to run ***
 #clear; python test_main.py -v -t test_trigger_temp_alert_high_readings
 #clear; python test_main.py -v -t test_trigger_temp_alert_low_readings
-#clear; python test_main.py -v -t test_trigger_and_clear_temp_alert
+clear; python test_main.py -v -t test_trigger_and_clear_temp_alert
 #clear; python test_main.py -v -t test_temp_alert_then_readings_in_and_out_of_range
 #clear; python test_main.py -v -t test_temp_readings_in_and_out_of_range
 
@@ -29,4 +29,4 @@
 
 
 # *** Run the entire test suite via pytest; uncomment to run ***
-clear; pytest test_main.py
+#clear; pytest test_main.py

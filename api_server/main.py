@@ -71,6 +71,7 @@ async def startup_event():
     CONFIG_DATA['mongodb_server_url'] = \
         'mongodb+srv://{uid}:{pw}@cluster0-ylplp.mongodb.net/basement_data?retryWrites=true&w=majority'.\
         format(uid=SECRET_DATA['mongodb_uid'], pw=SECRET_DATA['mongodb_pw'])
+    CONFIG_DATA['mongodb_database_name'] = 'basement_data'
     CONFIG_DATA['num_continuous_readings_to_check'] = 4
     CONFIG_DATA['temp_range_min'] = 65
     CONFIG_DATA['temp_range_max'] = 70
@@ -109,8 +110,8 @@ def get_readings_counts(dev_id: str = Query(None,
         print('==> get_readings_counts({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
-    db = client.basement_data       # This is the database we are using
+    mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
+    db = mongodb[CONFIG_DATA['mongodb_database_name']]       # This is the database we are using
 
     # Do the count for either all or the specified device
     query = {}
@@ -119,7 +120,7 @@ def get_readings_counts(dev_id: str = Query(None,
     num_docs = db.readings.count_documents(query)
 
     # Close the MongoDB connection when we are done with it
-    client.close()
+    mongodb.close()
 
     return num_docs
 
@@ -392,7 +393,7 @@ def post_readings(msg_body: ReadingsMsgBody):
 
     # Connect to the MongoDB server and select the database
     mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
-    db = mongodb.basement_data
+    db = mongodb[CONFIG_DATA['mongodb_database_name']]       # This is the database we are using
 
     # Store this reading into our DB
     data = {'dev_id': msg_body.dev_id,
@@ -441,8 +442,8 @@ def delete_readings(dev_id: str = Query(None,
         print('==> delete_readings({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
-    db = client.basement_data       # This is the database we are using
+    mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
+    db = mongodb[CONFIG_DATA['mongodb_database_name']]       # This is the database we are using
 
     # Whack 'em; either all or for a specified device id
     query = {}
@@ -451,7 +452,7 @@ def delete_readings(dev_id: str = Query(None,
     db.readings.delete_many(query)
 
     # Close the MongoDB connection when we are done with it
-    client.close()
+    mongodb.close()
 
     return
 
@@ -482,8 +483,8 @@ def get_active_alerts_counts(dev_id: str = Query(None,
         print('==> get_active_alerts_counts({}, {})'.format(dev_id, reading_type), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
-    db = client.basement_data       # This is the database we are using
+    mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
+    db = mongodb[CONFIG_DATA['mongodb_database_name']]       # This is the database we are using
 
     # Fetch the count
     query = {}
@@ -494,7 +495,7 @@ def get_active_alerts_counts(dev_id: str = Query(None,
     num_docs = db.active_alerts.count_documents(query)
 
     # Close the MongoDB connection when we are done with it
-    client.close()
+    mongodb.close()
 
     return num_docs
 
@@ -515,8 +516,8 @@ def delete_active_alerts(dev_id: str = Query(None,
         print('==> delete_active_alerts({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
-    db = client.basement_data       # This is the database we are using
+    mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
+    db = mongodb[CONFIG_DATA['mongodb_database_name']]       # This is the database we are using
 
     # Whack 'em; either all or for a specified device id
     query = {}
@@ -525,7 +526,7 @@ def delete_active_alerts(dev_id: str = Query(None,
     db.active_alerts.delete_many(query)
 
     # Close the MongoDB connection when we are done with it
-    client.close()
+    mongodb.close()
 
     return
 
@@ -556,8 +557,8 @@ def get_alert_history_counts(dev_id: str = Query(None,
         print('==> get_alert_history_counts({}, {})'.format(dev_id, reading_type), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
-    db = client.basement_data       # This is the database we are using
+    mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
+    db = mongodb[CONFIG_DATA['mongodb_database_name']]       # This is the database we are using
 
     # Do the count
     query = {}
@@ -568,7 +569,7 @@ def get_alert_history_counts(dev_id: str = Query(None,
     num_docs = db.alert_history.count_documents(query)
 
     # Close the MongoDB connection when we are done with it
-    client.close()
+    mongodb.close()
 
     return num_docs
 
@@ -589,8 +590,8 @@ def delete_alert_history(dev_id: str = Query(None,
         print('==> delete_alert_history({})'.format(dev_id), flush=True)
 
     # Connect to the MongoDB database; note it is hosted on Mongo Atlas
-    client = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
-    db = client.basement_data       # This is the database we are using
+    mongodb = pymongo.MongoClient(CONFIG_DATA['mongodb_server_url'])
+    db = mongodb[CONFIG_DATA['mongodb_database_name']]       # This is the database we are using
 
     # Whack 'em; either all or for a specified device id
     query = {}
@@ -599,6 +600,6 @@ def delete_alert_history(dev_id: str = Query(None,
     db.alert_history.delete_many(query)
 
     # Close the MongoDB connection when we are done with it
-    client.close()
+    mongodb.close()
 
     return
