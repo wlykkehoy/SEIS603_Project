@@ -149,7 +149,7 @@ On the Raspberry Pi:
 `python3 razpi_client.py`  
 
 The client app also supports a verbose mode which echos the messages it sends to the server:    
-`python3 razpi_client.py - v`
+`python3 razpi_client.py -v`
 
 # Additional Information and Resources
 Additional information and resources may be found in the Docs directory.
