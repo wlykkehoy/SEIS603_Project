@@ -51,7 +51,7 @@ Now, we need the connection string that will be used to connect to the MongoDB c
 3. In the dialog that appears, click 'Connect your application'
 4. For Driver, select 'Python' and Version '3.6 or later'
 5. Copy the connection string; it should look like the following.  
-```mongodb+srv://<user-id>:<password>@cluster0-ylplp.mongodb.net/<dbname>?retryWrites=true&w=majority```  
+`mongodb+srv://<user-id>:<password>@cluster0-ylplp.mongodb.net/<dbname>?retryWrites=true&w=majority`   
 	Notice there are place-holders for the password and db name. Go ahead and plug those in now and save somewhere.
 6. Click Close to close the dialog.
 
@@ -84,22 +84,22 @@ First, make sure this code is located somewhere on the PC that will be acting as
 
 Next,  we need to set up a couple of environment variables to hold the MongoDB connection string and SendGrid API key. If you are running Windows (which is what I developed the code on), bring up the Control Panel (or easier is to search for 'edit environment').  Add the following variables; it should not matter if they are added as user variables or system variables:
 
- - ```mongodb_server_url``` - set to the value saved in the MongoDB Atlas setup above  
- - ```sendgrid_api_key``` - set to the value of the SendGrid API key from above  
+`mongodb_server_url` - set to the value saved in the MongoDB Atlas setup above  
+`sendgrid_api_key` - set to the value of the SendGrid API key from above  
 
 The server app uses some additional Python libraries; they can be installed as follows:
 - FastAPI  
-```pip install fastapi[all]```  
+`pip install fastapi[all]`  
 - Requests  
-```pip install requests```  
+`pip install requests`  
 - SendGrid  
-```pip install sendgrid```  
+`pip install sendgrid`  
 - pymongo and dnspython (dnspython is required due to the "mongodb+srv" URL prefix used to access the MongoDB Atlas cluster)  
-```pip install pymongo```  
-```pip install dnspython```  
+`pip install pymongo`   
+`pip install dnspython`  
 
 One last thing to set up is the IP address of the server in the test code. In file api_server\test_main.py, change the following line (at approximately line 33) to the IP address of the PC running the server code (be careful to NOT change the port number):  
-```IP_ADDR = '192.168.86.183:8000' ```  
+`IP_ADDR = '192.168.86.183:8000'`   
 
 #### Raspberry Pi
 This code takes readings from an Adafruit Si7021 temperature and humidity sensor and sends them via the RESTful API to the server. The following assumes the sensor is connected to the Raspberry Pi and setup. If not, see [here](https://learn.adafruit.com/adafruit-si7021-temperature-plus-humidity-sensor/circuitpython-code) for an excellent step by step tutorial.
@@ -108,12 +108,12 @@ Make sure this code is located somewhere on the Raspberry Pi. Easiest is to clon
 
 A couple of additional libraries are used in this code thus must be installed on the Raspberry Pi (note the use of 'sudo pip3' here):
 - Adafruit Si7021 sensor interface library  
-```sudo pip3 install adafruit-circuitpython-si7021```  
+`sudo pip3 install adafruit-circuitpython-si7021`  
 - Requests library  
-```sudo pip3 install requests```  
+`sudo pip3 install requests`  
 
 And as we did above for the test code, we need to set the IP address of server PC. In file razpi_client\razpi_client.py, change the following line (at approximately line 12) to the IP address of the PC running the server code (be careful to NOT change the port number):  
-```'API_URL': 'http://192.168.86.183:8000/readings/'```  
+`'API_URL': 'http://192.168.86.183:8000/readings/'`  
 
 # Running the App
 Now that all of the setup is complete, we can finally run the app!
@@ -122,17 +122,17 @@ Now that all of the setup is complete, we can finally run the app!
 On the PC where the server will run:
 1. Start an Anaconda PowerShell prompt
 2. Go to folder api_server  
-```cd api_server```  
+`cd api_server`  
 4. Run the server, replacing the IP address below with yours  
-```uvicorn --host 192.168.86.183 main:app --reload```  
+`uvicorn --host 192.168.86.183 main:app --reload`  
 
 #### Running the Server Tests
 Also on the server PC:
 1. Start an Anaconda PowerShell prompt
 2. Go to folder api_server  
-```cd api_server```  
+`cd api_server`  
 3. Run the entire set of tests via pytest  
-```pytest test_main.py```  
+`pytest test_main.py`  
 
 You can also run the test app directly to either dump a list of individual tests or run an individual test in verbose mode (which echos out details of the messages being sent to the server plus verification checks):
 ```
@@ -148,7 +148,7 @@ On the Raspberry Pi:
 3. Run the client app (note the use of "python3" here):  
 `python3 razpi_client.py`  
 
-The client app also supports a verbose mode which echos the messages it sends to the server:
+The client app also supports a verbose mode which echos the messages it sends to the server:    
 `python3 razpi_client.py - v`
 
 # Additional Information and Resources
