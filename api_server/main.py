@@ -72,7 +72,7 @@ async def startup_event():
     CONFIG_DATA['temp_range_max'] = 70
     CONFIG_DATA['humidity_range_min'] = 40
     CONFIG_DATA['humidity_range_max'] = 50
-    CONFIG_DATA['alert_renotification_delay'] = 1       # num minutes to wait to resend an alert notification email
+    CONFIG_DATA['alert_renotification_delay'] = 1440     # num minutes to wait to resend an alert notification email
     CONFIG_DATA['email_from'] = 'WadeLykkehoy@ZenDataAnalytics.com'
     CONFIG_DATA['email_to'] = ' WadeLykkehoy@gmail.com'
 
@@ -135,6 +135,10 @@ def send_alert_notification_email(dev_id, reading_type, current_value):
     if TRACE_MESSAGE_PROCESSING:
         print('    ==> send_alert_notification_email({}, {}, {})'.format(dev_id, reading_type, current_value))
 
+    # Connect to the SendGrid client API
+    sendgrid_client = SendGridAPIClient(SECRET_DATA['sendgrid_api_key'])
+
+    # Construct the email content
     if reading_type == ReadingType.TEMP:
         subject = '{} - Temperature Alert'.format(dev_id)
         html_content = '<p><h2>{} Temperature Alert</h2></p>'.format(dev_id)
@@ -144,12 +148,12 @@ def send_alert_notification_email(dev_id, reading_type, current_value):
         html_content = '<p><h2>{} Humidity Alert</h2></p>'.format(dev_id)
         html_content += '<p>Curent humidity is {}%.</p>'.format(current_value)
 
+    # Package up & send off
     message = Mail(from_email=CONFIG_DATA['email_from'],
                    to_emails=CONFIG_DATA['email_to'],
                    subject=subject,
                    html_content=html_content)
-    sendgrid = SendGridAPIClient(SECRET_DATA['sendgrid_api_key'])
-    sendgrid.send(message)
+    sendgrid_client.send(message)
 
 
 def send_alert_cleared_notification_email(dev_id, reading_type, current_value):

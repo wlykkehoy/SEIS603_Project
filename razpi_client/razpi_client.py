@@ -56,7 +56,7 @@ def main(verbose):
     Args:
         verbose (bool): If True, a lot of info is printed during execution.
     """
-    recent_post_status_codes_ok = collections.deque([True] *  CONFIG_DATA['num_recent_post_status_codes_to_look_at'],
+    recent_post_status_codes_ok = collections.deque([True] * CONFIG_DATA['num_recent_post_status_codes_to_look_at'],
                                                     maxlen=CONFIG_DATA['num_recent_post_status_codes_to_look_at'])
         
     # Our interface objects to the Adafruit SI7021 temp & humidity sensor
@@ -67,7 +67,7 @@ def main(verbose):
         while True:      # Only way to exit is user hitting Ctrl-C
             temp_c = sensor.temperature
             temp_f = int(round(c_to_f(temp_c), 0))                  # only want integer portion
-            humidity =  int(round(sensor.relative_humidity, 0))     # only want integer portion
+            humidity = int(round(sensor.relative_humidity, 0))     # only want integer portion
             now = datetime.datetime.now()
             timestamp = now.strftime(TIMESTAMP_FORMAT)
             
@@ -102,8 +102,7 @@ if __name__ == '__main__':
     my_parser.add_argument('-v', action='store_true', help='verboase mode; echoes message contents')
     args = my_parser.parse_args()
     verbose = args.v
-    verbose = True
-    
+
     print('Client started, press Ctrl-C to stop...', flush=True)
     main(verbose)
     print('Client stopped', flush=True)
